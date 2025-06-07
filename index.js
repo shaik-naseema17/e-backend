@@ -17,9 +17,10 @@ const __dirname = path.dirname(__filename);
 
 // CORS configuration
 app.use(cors({
-    origin: "http://localhost:5173", // React frontend URL
+    origin: ["http://localhost:5173", "https://e-frontend1.onrender.com/newhome"],
     credentials: true,
 }));
+
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.json());
