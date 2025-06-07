@@ -11,15 +11,30 @@ import tradeRoutes from "./routes/trade.js";
  // Fixed import
 import { fileURLToPath } from 'url';
 
+
+const allowedOrigins = [
+    "http://localhost:5173", // local dev
+    "https://e-frontend1.onrender.com", // deployed frontend
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
+    credentials: true,
+}));
+
+
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // CORS configuration
-app.use(cors({
-    origin: ["http://localhost:5173", "https://e-frontend1.onrender.com/newhome"],
-    credentials: true,
-}));
+
 
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
