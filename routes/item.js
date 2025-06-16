@@ -1,16 +1,11 @@
 import express from "express";
 import multer from "multer";
-import path from "path";
+import { storage } from "../utils/cloudinary.js";
 import Item from "../models/Item.js";
 import jwt from "jsonwebtoken";
 
-const router = express.Router();
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, "uploads/"),
-    filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
-});
 const upload = multer({ storage });
+const router = express.Router();
 
 const authenticateUser = (req, res, next) => {
     const token = req.cookies.token;
@@ -23,24 +18,31 @@ const authenticateUser = (req, res, next) => {
         res.status(401).json({ message: "Invalid token" });
     }
 };
-//ADD ITEM
+
+// ADD ITEM - Upload to Cloudinary
 router.post('/create', authenticateUser, upload.single('image'), async (req, res) => {
     try {
         const { title, size, condition, preferences } = req.body;
         if (!title || !size || !condition || !preferences || !req.file) {
             return res.status(400).json({ message: 'All fields are required.' });
         }
+
         const newItem = new Item({
-            title, size, condition, preferences,
-            imageUrl: `/uploads/${req.file.filename}`,
+            title,
+            size,
+            condition,
+            preferences,
+            imageUrl: req.file.path, // Cloudinary URL
             createdBy: req.userId
         });
+
         await newItem.save();
         res.status(201).json({ message: 'Item created successfully', item: newItem });
     } catch (error) {
         res.status(500).json({ message: 'Failed to create item', error: error.message });
     }
 });
+
 // Fetch items created by the logged-in user
 router.get('/my-items', authenticateUser, async (req, res) => {
     try {
@@ -93,10 +95,10 @@ router.put('/:id', upload.single('image'), async (req, res) => {
         const updateData = { title, size, condition, preferences };
 
         if (req.file) {
-            updateData.imageUrl = `/uploads/${req.file.filename}`;
+            updateData.imageUrl = req.file.path; // Cloudinary URL
         }
 
-        const updatedItem = await Item.findByIdAndUpdate(id, updateData, { new: true }).populate('createdBy', 'username email'); // Include email here
+        const updatedItem = await Item.findByIdAndUpdate(id, updateData, { new: true }).populate('createdBy', 'username email');
 
         if (!updatedItem) {
             return res.status(404).json({ message: 'Item not found' });
